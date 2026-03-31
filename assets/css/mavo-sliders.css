@@ -1,0 +1,153 @@
+/* =============================================================
+   Mavo Sliders — minimal replacement for Smart Slider 3
+   ============================================================= */
+
+/* ── Container ─────────────────────────────────────────────── */
+.mavo-slider {
+	position: relative;
+	overflow: hidden;
+	display: block;
+}
+
+/* ── Track (flex row of slides) ────────────────────────────── */
+.mavo-slider__track {
+	display: flex;
+	height: 100%;
+	/* easeOutQuad, matching Smart Slider's mainanimation settings */
+	transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	will-change: transform;
+}
+
+/* ── Individual slide ──────────────────────────────────────── */
+.mavo-slider__slide {
+	flex: 0 0 100%;
+	position: relative;
+	overflow: hidden;
+}
+
+/* Full-bleed clickable link covering the entire slide */
+.mavo-slide__link {
+	display: block;
+	width: 100%;
+	height: 100%;
+	position: relative;
+	text-decoration: none;
+	color: inherit;
+}
+
+/* ── Background image (hero slides) ───────────────────────── */
+.mavo-slide__bg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+}
+
+/* ── Title overlay (hero slides) ──────────────────────────── */
+.mavo-slide__overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center; /* vertically centred, matching Smart Slider */
+	pointer-events: none; /* clicks pass through to the parent <a> */
+}
+
+/* Heading inside the overlay — full-width blue stripe */
+.mavo-slide__heading {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 10px;
+	background: rgba(78, 116, 165, 0.5);
+	font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif;
+	font-size: 225%;
+	font-weight: 200;
+	line-height: 1.5;
+	color: #fff;
+	text-align: right;
+}
+
+/* ── Header slider ─────────────────────────────────────────── */
+.mavo-slider--header {
+	float: left;
+	width: 360px;
+	max-width: 100%;
+	height: 100px;
+}
+
+/* Logo image fills the logo slide exactly */
+.mavo-slider--header .mavo-slide__link img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* Text slide — vertically centred content, left-aligned */
+.mavo-slide--text .mavo-slide__link {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 0 10px;
+}
+
+.mavo-slide__title {
+	margin: 0;
+	font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif;
+	font-size: 243.75%;
+	font-weight: 200;
+	line-height: 1.5;
+	color: #23527c;
+}
+
+.mavo-slide__subtitle {
+	margin: 0;
+	font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif;
+	font-size: 75%;
+	font-weight: 200;
+	line-height: 1.5;
+	color: #886353;
+}
+
+/* ── Hero slider ───────────────────────────────────────────── */
+.mavo-slider--hero {
+	width: 100%;
+	max-width: 960px;
+	/* Maintain 960×400 (2.4:1) aspect ratio at all viewport widths */
+	aspect-ratio: 12 / 5;
+}
+
+/* ── Responsive — tablet ───────────────────────────────────── */
+@media (orientation: landscape) and (max-width: 1199px) and (min-width: 901px),
+       (orientation: portrait)  and (max-width: 1199px) and (min-width: 701px) {
+	.mavo-slide__heading {
+		font-size: calc(225% * 0.8);
+	}
+	.mavo-slide__title {
+		font-size: calc(243.75% * 0.8);
+	}
+	.mavo-slide__subtitle {
+		font-size: calc(75% * 0.8);
+	}
+}
+
+/* ── Responsive — mobile ───────────────────────────────────── */
+@media (orientation: landscape) and (max-width: 900px),
+       (orientation: portrait)  and (max-width: 700px) {
+	.mavo-slider--header {
+		width: 320px;
+		height: 88px;
+	}
+	.mavo-slide__heading {
+		font-size: calc(225% * 0.5);
+		padding: 6px;
+	}
+	.mavo-slide__title {
+		font-size: calc(243.75% * 0.5);
+	}
+	.mavo-slide__subtitle {
+		font-size: calc(75% * 0.5);
+	}
+}
