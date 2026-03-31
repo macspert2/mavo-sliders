@@ -112,16 +112,34 @@
 }
 
 /* ── Hero slider ───────────────────────────────────────────── */
+
+/* Break out of the content container to fill the full viewport width.
+   calc(50% - 50vw) shifts left by exactly the amount the centred
+   container is inset from the viewport edge, regardless of padding. */
 .mavo-slider--hero {
-	width: 100%;
-	max-width: 960px;
-	/* Maintain 960×400 (2.4:1) aspect ratio at all viewport widths */
-	aspect-ratio: 12 / 5;
+	width: 100vw;
+	margin-left: calc(50% - 50vw);
+	height: 400px; /* fixed cap on wide screens */
 }
 
-/* ── Responsive — tablet ───────────────────────────────────── */
-@media (orientation: landscape) and (max-width: 1199px) and (min-width: 901px),
-       (orientation: portrait)  and (max-width: 1199px) and (min-width: 701px) {
+/* Below 960 px, scale height proportionally (400/960 = 5/12 ≈ 41.67 %) */
+@media (max-width: 960px) {
+	.mavo-slider--hero {
+		height: calc(100vw * 5 / 12);
+	}
+}
+
+/* Inner wrapper constrains the blue title stripe to content width */
+.mavo-slide__overlay-inner {
+	width: 100%;
+	max-width: 960px;
+	margin: 0 auto;
+}
+
+/* ── Responsive — font scaling ─────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 1199px) and (min-width: 701px) {
 	.mavo-slide__heading {
 		font-size: calc(225% * 0.8);
 	}
@@ -133,9 +151,8 @@
 	}
 }
 
-/* ── Responsive — mobile ───────────────────────────────────── */
-@media (orientation: landscape) and (max-width: 900px),
-       (orientation: portrait)  and (max-width: 700px) {
+/* Mobile */
+@media (max-width: 700px) {
 	.mavo-slider--header {
 		width: 320px;
 		height: 88px;

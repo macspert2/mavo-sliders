@@ -8,9 +8,8 @@ class Mavo_Hero_Slider {
 	// Smaller logo variant for srcset
 	private const LOGO_360  = 'uploads/2026/03/3verres1bib_banner2-360x.webp';
 
-	// Responsive sizes hint for post feature images
-	// Matches the three slider breakpoints: mobile / tablet / desktop
-	private const IMG_SIZES = '(max-width: 700px) 320px, (max-width: 1199px) 701px, 960px';
+	// Hero images fill the full viewport width at every breakpoint
+	private const IMG_SIZES = '100vw';
 
 	public static function render(): string {
 		$home_url  = mavo_home_url();
@@ -46,7 +45,9 @@ class Mavo_Hero_Slider {
 						     fetchpriority="high"
 						     decoding="async">
 						<div class="mavo-slide__overlay">
-							<h1 class="mavo-slide__heading">Maman Voyage</h1>
+							<div class="mavo-slide__overlay-inner">
+								<h1 class="mavo-slide__heading">Maman Voyage</h1>
+							</div>
 						</div>
 					</a>
 				</div>
@@ -78,7 +79,9 @@ class Mavo_Hero_Slider {
 							     loading="lazy"
 							     decoding="async">
 							<div class="mavo-slide__overlay">
-								<p class="mavo-slide__heading"><?php echo esc_html( $title ); ?></p>
+								<div class="mavo-slide__overlay-inner">
+									<p class="mavo-slide__heading"><?php echo esc_html( $title ); ?></p>
+								</div>
 							</div>
 						</a>
 					</div>
