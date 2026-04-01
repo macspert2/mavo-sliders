@@ -21,6 +21,7 @@ class Mavo_Hero_Slider {
 		$posts = get_posts( [
 			'numberposts'      => 4,
 			'post_status'      => 'publish',
+            'category'		   => 1752,
 			'orderby'          => 'rand',
 			'suppress_filters' => false,
 		] );
