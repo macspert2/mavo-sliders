@@ -118,7 +118,7 @@
    calc(50% - 50vw) shifts left by exactly the amount the centred
    container is inset from the viewport edge, regardless of padding. */
 .mavo-slider--hero {
-	padding-top: 100px; /* below sticky header */
+/*	padding-top: 100px; /* below sticky header */
 	width: 100vw;
 	margin-left: calc(50% - 50vw);
 	height: 400px; /* fixed cap on wide screens */
