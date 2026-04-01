@@ -50,14 +50,15 @@
 	position: absolute;
 	inset: 0;
 	display: flex;
-	align-items: center; /* vertically centred, matching Smart Slider */
+	align-items: end;
+	margin-bottom: 20px; /* bottom aligned with 20px margin */
 	pointer-events: none; /* clicks pass through to the parent <a> */
 }
 
 /* Heading inside the overlay — full-width blue stripe */
 .mavo-slide__heading {
 	display: block;
-	width: 100%;
+/*	width: 100%; shows 980px if left in */
 	margin: 0;
 	padding: 10px;
 	background: rgba(78, 116, 165, 0.5);
@@ -117,6 +118,7 @@
    calc(50% - 50vw) shifts left by exactly the amount the centred
    container is inset from the viewport edge, regardless of padding. */
 .mavo-slider--hero {
+	padding-top: 100px; /* below sticky header */
 	width: 100vw;
 	margin-left: calc(50% - 50vw);
 	height: 400px; /* fixed cap on wide screens */
