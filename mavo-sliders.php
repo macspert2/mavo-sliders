@@ -41,7 +41,14 @@ add_action( 'wp_head', static function () {
 		return;
 	}
 	$url = content_url( 'uploads/2026/03/3verres1bib_banner2.webp' );
-	echo '<link rel="preload" as="image" href="' . esc_url( $url ) . '" fetchpriority="high">' . "\n";
+/*	echo '<link rel="preload" as="image" href="' . esc_url( $url ) . '" fetchpriority="high">' . "\n"; */
+	echo '<link rel="preload" as="image"
+  href="<https://www.mamanvoyage.com/wp-content/uploads/2026/03/3verres1bib_banner2.webp>"
+  imagesrcset="<https://www.mamanvoyage.com/wp-content/uploads/2026/03/3verres1bib_banner2-360x.webp> 360w,
+               <https://www.mamanvoyage.com/wp-content/uploads/2026/03/3verres1bib_banner2.webp> 960w"
+  imagesizes="100vw"
+  fetchpriority="high">' . "\n";
+
 }, 1 );
 
 /* ── Shortcodes ──────────────────────────────────────────────── */
