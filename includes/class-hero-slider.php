@@ -40,7 +40,7 @@ class Mavo_Hero_Slider {
 						     srcset="<?php echo esc_attr( $logo_360 ); ?> 360w,
 						             <?php echo esc_attr( $logo_full ); ?> 960w"
 						     sizes="<?php echo esc_attr( self::IMG_SIZES ); ?>"
-						     alt=""
+						     alt="Logo Maman Voyage"
 						     width="960" height="400"
 						     loading="eager"
 						     fetchpriority="high"
