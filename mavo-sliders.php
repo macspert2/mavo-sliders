@@ -40,14 +40,13 @@ add_action( 'wp_head', static function () {
 	if ( ! is_front_page() ) {
 		return;
 	}
-	$url = content_url( 'uploads/2026/03/3verres1bib_banner2.webp' );
-/*	echo '<link rel="preload" as="image" href="' . esc_url( $url ) . '" fetchpriority="high">' . "\n"; */
-	echo '<link rel="preload" as="image"
-  href="<https://www.mamanvoyage.com/wp-content/uploads/2026/03/3verres1bib_banner2.webp>"
-  imagesrcset="<https://www.mamanvoyage.com/wp-content/uploads/2026/03/3verres1bib_banner2-360x.webp> 360w,
-               <https://www.mamanvoyage.com/wp-content/uploads/2026/03/3verres1bib_banner2.webp> 960w"
-  imagesizes="100vw"
-  fetchpriority="high">' . "\n";
+	$logo_full = content_url( 'uploads/2026/03/3verres1bib_banner2.webp' );
+	$logo_360  = content_url( 'uploads/2026/03/3verres1bib_banner2-360x.webp' );
+	echo '<link rel="preload" as="image"'
+		. ' href="' . esc_url( $logo_full ) . '"'
+		. ' imagesrcset="' . esc_attr( $logo_360 ) . ' 360w, ' . esc_attr( $logo_full ) . ' 960w"'
+		. ' imagesizes="100vw"'
+		. ' fetchpriority="high">' . "\n";
 
 }, 1 );
 

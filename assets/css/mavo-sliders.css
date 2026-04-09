@@ -35,10 +35,17 @@
 	color: inherit;
 }
 
-/* ── Background image (hero slides) ───────────────────────── */
-.mavo-slide__bg {
+/* ── Background picture + image (hero slides) ──────────────── */
+
+/* <picture> takes the absolute fill; <img> inside inherits the dimensions */
+.mavo-slide__pic {
 	position: absolute;
 	inset: 0;
+	display: block; /* <picture> is inline by default */
+}
+
+.mavo-slide__bg {
+	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
