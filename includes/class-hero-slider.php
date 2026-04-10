@@ -77,7 +77,7 @@ class Mavo_Hero_Slider {
 						static fn( $s ) => esc_attr( $s['jpeg'] ) . ' ' . $s['w'] . 'w',
 						$sources
 					) );
-					$src_jpeg = esc_url( $sources[0]['jpeg'] ); // largest as <img src> fallback
+					$src_jpeg = esc_url( end( $sources )['jpeg'] ); // smallest (480w) as <img src> fallback
 					?>
 					<div class="mavo-slider__slide">
 						<a href="<?php echo esc_url( $post_url ); ?>" class="mavo-slide__link">
