@@ -21,6 +21,7 @@ class Mavo_Hero_Slider {
 			'category'         => 1752,
 			'orderby'          => 'rand',
 			'suppress_filters' => false,
+			'date_query'       => [ [ 'after' => '2015-12-31', 'inclusive' => false ] ],
 		] );
 
 		ob_start();
@@ -108,13 +109,15 @@ class Mavo_Hero_Slider {
 	}
 
 	/**
-	 * Returns WebP + JPEG source URLs at three widths (960, 640, 480 px)
-	 * derived from the attachment's registered size metadata.
+	 * Returns WebP + JPEG source URLs at three widths (960, 640, 480 px).
 	 *
-	 * Naming conventions assumed:
-	 *   Original JPEG  : name.jpeg
-	 *   Resized JPEG   : name-{w}x{h}.jpeg   (WordPress standard)
-	 *   WebP of any    : {jpeg-filename}.webp  (appended extension)
+	 * Filenames are constructed directly from the original's pixel dimensions,
+	 * using WordPress's own (int) truncation to match the names WP writes to disk:
+	 *   name-640x480.jpeg  →  name-640x480.jpeg.webp
+	 *
+	 * The previous metadata-lookup approach broke for images uploaded before
+	 * WordPress 4.4 (no medium_large entry in DB) — those returned the full-
+	 * resolution file for every srcset slot.
 	 *
 	 * @return array  [ ['w'=>960,'jpeg'=>url,'webp'=>url], [640…], [480…] ]
 	 *                Ordered largest → smallest. Empty on failure.
@@ -125,46 +128,33 @@ class Mavo_Hero_Slider {
 			return [];
 		}
 
+		$meta   = wp_get_attachment_metadata( $thumb_id );
+		$orig_w = (int) ( $meta['width']  ?? 0 );
+		$orig_h = (int) ( $meta['height'] ?? 0 );
+
 		$dir_url = trailingslashit( dirname( $full_url ) );
-		$meta    = wp_get_attachment_metadata( $thumb_id );
-
-		// Map width (px) → filename for the original + every registered size
-		$by_width = [];
-		if ( ! empty( $meta['width'] ) ) {
-			$by_width[ (int) $meta['width'] ] = basename( $full_url );
-		}
-		foreach ( $meta['sizes'] ?? [] as $size ) {
-			if ( ! empty( $size['file'] ) && ! empty( $size['width'] ) ) {
-				$by_width[ (int) $size['width'] ] = $size['file'];
-			}
-		}
-
-		if ( ! $by_width ) {
-			return [];
-		}
-
-		krsort( $by_width ); // largest → smallest
+		$file    = basename( $full_url );                  // e.g. IMG_2831.jpg
+		$ext     = pathinfo( $file, PATHINFO_EXTENSION ); // jpg / jpeg
+		$name    = pathinfo( $file, PATHINFO_FILENAME );  // IMG_2831
 
 		$sources = [];
 		foreach ( [ 960, 640, 480 ] as $target_w ) {
-			// Walk largest → smallest; keep overwriting while width >= target.
-			// After the loop $file is the smallest file still at least $target_w wide.
-			$file = null;
-			foreach ( $by_width as $w => $f ) {
-				if ( $w >= $target_w ) {
-					$file = $f;
-				}
-			}
-			if ( ! $file ) {
-				// Nothing wide enough — use the largest available
-				reset( $by_width );
-				$file = current( $by_width );
+			if ( ! $orig_w || $target_w >= $orig_w ) {
+				// Original is at or below the target width — serve as-is (no upscaling)
+				$sized_file = $file;
+			} else {
+				// Construct the WordPress-standard resized filename.
+				// WordPress uses (int) truncation in wp_constrain_dimensions(),
+				// e.g. a 960×720 image at 640 w → 640×480  (720 * 640/960 = 480.0)
+				//                              at 480 w → 480×360  (720 * 480/960 = 360.0)
+				$target_h   = (int) ( $orig_h * $target_w / $orig_w );
+				$sized_file = "{$name}-{$target_w}x{$target_h}.{$ext}";
 			}
 
 			$sources[] = [
 				'w'    => $target_w,
-				'jpeg' => $dir_url . $file,
-				'webp' => $dir_url . $file . '.webp',
+				'jpeg' => $dir_url . $sized_file,
+				'webp' => $dir_url . $sized_file . '.webp',
 			];
 		}
 
