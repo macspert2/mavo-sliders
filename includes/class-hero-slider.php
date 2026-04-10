@@ -38,7 +38,8 @@ class Mavo_Hero_Slider {
 							<source type="image/webp"
 							        srcset="<?php echo esc_attr( $logo_360 ); ?> 360w,
 							                <?php echo esc_attr( $logo_full ); ?> 960w"
-							        sizes="100vw">
+							        sizes="100vw"
+							        data-swift-skip-lazy="true">
 							<img class="mavo-slide__bg"
 							     src="<?php echo esc_url( $logo_full ); ?>"
 							     alt=""
@@ -77,7 +78,10 @@ class Mavo_Hero_Slider {
 						static fn( $s ) => esc_attr( $s['jpeg'] ) . ' ' . $s['w'] . 'w',
 						$sources
 					) );
-					$src_jpeg = esc_url( end( $sources )['jpeg'] ); // smallest (480w) as <img src> fallback
+					$smallest = end( $sources );                  // 480w entry
+					$src_jpeg = esc_url( $smallest['jpeg'] );      // smallest (480w) as <img src> fallback
+					$img_w    = $smallest['w'];                    // 480
+					$img_h    = $smallest['h'];                    // proportional height at 480w
 					?>
 					<div class="mavo-slider__slide">
 						<a href="<?php echo esc_url( $post_url ); ?>" class="mavo-slide__link">
@@ -90,6 +94,8 @@ class Mavo_Hero_Slider {
 								     srcset="<?php echo $srcset_jpeg; ?>"
 								     sizes="100vw"
 								     alt="<?php echo esc_attr( $title ); ?>"
+								     width="<?php echo $img_w; ?>"
+								     height="<?php echo $img_h; ?>"
 								     loading="lazy"
 								     decoding="async">
 							</picture>
@@ -142,17 +148,19 @@ class Mavo_Hero_Slider {
 			if ( ! $orig_w || $target_w >= $orig_w ) {
 				// Original is at or below the target width — serve as-is (no upscaling)
 				$sized_file = $file;
+				$sized_h    = $orig_h;
 			} else {
 				// Construct the WordPress-standard resized filename.
 				// WordPress uses (int) truncation in wp_constrain_dimensions(),
 				// e.g. a 960×720 image at 640 w → 640×480  (720 * 640/960 = 480.0)
 				//                              at 480 w → 480×360  (720 * 480/960 = 360.0)
-				$target_h   = (int) ( $orig_h * $target_w / $orig_w );
-				$sized_file = "{$name}-{$target_w}x{$target_h}.{$ext}";
+				$sized_h    = (int) ( $orig_h * $target_w / $orig_w );
+				$sized_file = "{$name}-{$target_w}x{$sized_h}.{$ext}";
 			}
 
 			$sources[] = [
 				'w'    => $target_w,
+				'h'    => $sized_h,
 				'jpeg' => $dir_url . $sized_file,
 				'webp' => $dir_url . $sized_file . '.webp',
 			];
