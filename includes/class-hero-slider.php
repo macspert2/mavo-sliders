@@ -5,13 +5,17 @@ class Mavo_Hero_Slider {
 
 	// Full-width logo (WebP, slide 1 background)
 	private const LOGO_FULL = 'uploads/2026/03/3verres1bib_banner2.webp';
-	// Smaller logo variant for srcset
+	// Smaller logo variants for srcset
 	private const LOGO_360  = 'uploads/2026/03/3verres1bib_banner2-360x.webp';
+	private const LOGO_480  = 'uploads/2026/03/3verres1bib_banner2-480x200.webp';
+	private const LOGO_640  = 'uploads/2026/03/3verres1bib_banner2-640x267.webp';
 
 	public static function render(): string {
 		$home_url  = mavo_home_url();
 		$logo_full = content_url( self::LOGO_FULL );
 		$logo_360  = content_url( self::LOGO_360 );
+		$logo_480  = content_url( self::LOGO_480 );
+		$logo_640  = content_url( self::LOGO_640 );
 
 		// 4 random published posts; suppress_filters=false lets Polylang
 		// restrict results to the current language automatically.
@@ -33,21 +37,18 @@ class Mavo_Hero_Slider {
 				<!-- Slide 1: Logo / Homepage -->
 				<div class="mavo-slider__slide">
 					<a href="<?php echo esc_url( $home_url ); ?>" class="mavo-slide__link">
-						<!-- Logo is natively WebP; no JPEG fallback needed -->
-						<picture class="mavo-slide__pic">
-							<source type="image/webp"
-							        srcset="<?php echo esc_attr( $logo_360 ); ?> 360w,
-							                <?php echo esc_attr( $logo_full ); ?> 960w"
-							        sizes="100vw"
-							        data-swift-skip-lazy="true">
-							<img class="mavo-slide__bg"
-							     src="<?php echo esc_url( $logo_full ); ?>"
-							     alt=""
-							     width="960" height="400"
-							     loading="eager"
-							     fetchpriority="high"
-							     decoding="async">
-						</picture>
+						<img class="mavo-slide__bg"
+						     src="<?php echo esc_url( $logo_full ); ?>"
+						     srcset="<?php echo esc_attr( $logo_360 ); ?> 360w,
+						             <?php echo esc_attr( $logo_480 ); ?> 480w,
+						             <?php echo esc_attr( $logo_640 ); ?> 640w,
+						             <?php echo esc_attr( $logo_full ); ?> 960w"
+						     sizes="(max-width: 480px) 480px, (max-width: 640px) 640px, 960px"
+						     loading="eager"
+						     fetchpriority="high"
+						     decoding="async"
+						     width="960" height="400"
+						     alt="">
 						<div class="mavo-slide__overlay">
 							<div class="mavo-slide__overlay-inner">
 								<h1 class="mavo-slide__heading">Maman Voyage</h1>
@@ -62,43 +63,34 @@ class Mavo_Hero_Slider {
 					if ( ! $thumb_id ) {
 						continue; // skip posts without a featured image
 					}
-					$sources = self::picture_sources( $thumb_id );
+					$sources = self::webp_sources( $thumb_id );
 					if ( ! $sources ) {
 						continue;
 					}
 					$post_url = get_permalink( $post->ID );
 					$title    = get_the_title( $post->ID );
 
-					// Build srcset attribute strings (ordered 960w → 640w → 480w)
+					// Build srcset attribute string (ordered 960w → 640w → 480w, WebP only)
 					$srcset_webp = implode( ', ', array_map(
 						static fn( $s ) => esc_attr( $s['webp'] ) . ' ' . $s['w'] . 'w',
 						$sources
 					) );
-					$srcset_jpeg = implode( ', ', array_map(
-						static fn( $s ) => esc_attr( $s['jpeg'] ) . ' ' . $s['w'] . 'w',
-						$sources
-					) );
 					$smallest = end( $sources );                  // 480w entry
-					$src_jpeg = esc_url( $smallest['jpeg'] );      // smallest (480w) as <img src> fallback
+					$src_webp = esc_url( $smallest['webp'] );     // smallest (480w) as src
 					$img_w    = $smallest['w'];                    // 480
 					$img_h    = $smallest['h'];                    // proportional height at 480w
 					?>
 					<div class="mavo-slider__slide">
 						<a href="<?php echo esc_url( $post_url ); ?>" class="mavo-slide__link">
-							<picture class="mavo-slide__pic">
-								<source type="image/webp"
-								        srcset="<?php echo $srcset_webp; ?>"
-								        sizes="100vw">
-								<img class="mavo-slide__bg"
-								     src="<?php echo $src_jpeg; ?>"
-								     srcset="<?php echo $srcset_jpeg; ?>"
-								     sizes="100vw"
-								     alt="<?php echo esc_attr( $title ); ?>"
-								     width="<?php echo $img_w; ?>"
-								     height="<?php echo $img_h; ?>"
-								     loading="lazy"
-								     decoding="async">
-							</picture>
+							<img class="mavo-slide__bg"
+							     src="<?php echo $src_webp; ?>"
+							     srcset="<?php echo $srcset_webp; ?>"
+							     sizes="100vw"
+							     loading="lazy"
+							     decoding="async"
+							     width="<?php echo $img_w; ?>"
+							     height="<?php echo $img_h; ?>"
+							     alt="<?php echo esc_attr( $title ); ?>">
 							<div class="mavo-slide__overlay">
 								<div class="mavo-slide__overlay-inner">
 									<p class="mavo-slide__heading"><?php echo esc_html( $title ); ?></p>
@@ -115,20 +107,16 @@ class Mavo_Hero_Slider {
 	}
 
 	/**
-	 * Returns WebP + JPEG source URLs at three widths (960, 640, 480 px).
+	 * Returns WebP source URLs at three widths (960, 640, 480 px).
 	 *
 	 * Filenames are constructed directly from the original's pixel dimensions,
 	 * using WordPress's own (int) truncation to match the names WP writes to disk:
-	 *   name-640x480.jpeg  →  name-640x480.jpeg.webp
+	 *   name-640x480.jpg.webp
 	 *
-	 * The previous metadata-lookup approach broke for images uploaded before
-	 * WordPress 4.4 (no medium_large entry in DB) — those returned the full-
-	 * resolution file for every srcset slot.
-	 *
-	 * @return array  [ ['w'=>960,'jpeg'=>url,'webp'=>url], [640…], [480…] ]
+	 * @return array  [ ['w'=>960,'webp'=>url,'h'=>int], [640…], [480…] ]
 	 *                Ordered largest → smallest. Empty on failure.
 	 */
-	private static function picture_sources( int $thumb_id ): array {
+	private static function webp_sources( int $thumb_id ): array {
 		$full_url = wp_get_attachment_url( $thumb_id );
 		if ( ! $full_url ) {
 			return [];
@@ -161,7 +149,6 @@ class Mavo_Hero_Slider {
 			$sources[] = [
 				'w'    => $target_w,
 				'h'    => $sized_h,
-				'jpeg' => $dir_url . $sized_file,
 				'webp' => $dir_url . $sized_file . '.webp',
 			];
 		}
