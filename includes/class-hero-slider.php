@@ -89,6 +89,7 @@ class Mavo_Hero_Slider {
 							     sizes="100vw"
 							     loading="lazy"
 							     decoding="async"
+								 data-swift-skip-lazy="true"
 							     width="<?php echo $img_w; ?>"
 							     height="<?php echo $img_h; ?>"
 							     alt="<?php echo esc_attr( $title ); ?>">
