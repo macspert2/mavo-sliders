@@ -47,6 +47,7 @@ class Mavo_Hero_Slider {
 						     loading="eager"
 						     fetchpriority="high"
 						     decoding="async"
+						     data-swift-skip-lazy="true"
 						     width="960" height="400"
 						     alt="">
 						<div class="mavo-slide__overlay">
