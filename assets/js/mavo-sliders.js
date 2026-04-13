@@ -12,10 +12,20 @@
 
 		function goTo(n) {
 			current = ((n % count) + count) % count;
+			track.style.willChange = 'transform';
 			track.style.transform = 'translateX(-' + (current * 100) + '%)';
+			track.addEventListener('transitionend', function cleanup() {
+				track.style.willChange = 'auto';
+				track.removeEventListener('transitionend', cleanup);
+			});
 		}
 
-		setInterval(function () { goTo(current + 1); }, interval);
+		var timer = setInterval(function () { goTo(current + 1); }, interval);
+
+		el.addEventListener('mouseenter', function () { clearInterval(timer); });
+		el.addEventListener('mouseleave', function () {
+			timer = setInterval(function () { goTo(current + 1); }, interval);
+		});
 	}
 
 	document.addEventListener('DOMContentLoaded', function () {

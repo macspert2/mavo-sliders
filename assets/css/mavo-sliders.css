@@ -15,7 +15,13 @@
 	height: 100%;
 	/* easeOutQuad, matching Smart Slider's mainanimation settings */
 	transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-	will-change: transform;
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mavo-slider__track {
+		transition: none;
+	}
 }
 
 /* ── Individual slide ──────────────────────────────────────── */
@@ -69,7 +75,7 @@
 	margin: 0;
 	padding: 10px;
 	background: rgba(78, 116, 165, 0.5);
-	font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif;
+/*	font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif; */
 	font-size: 225%;
 	font-weight: 200;
 	line-height: 1.5;
