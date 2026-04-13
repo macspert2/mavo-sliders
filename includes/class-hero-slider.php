@@ -11,8 +11,7 @@ class Mavo_Hero_Slider {
 	private const LOGO_640  = 'uploads/2026/03/3verres1bib_banner2-640x267.webp';
 
 	public static function render(): string {
-		$home_url    = mavo_home_url();
-		$heading_tag = is_home() ? 'h1' : 'p';
+		$home_url  = mavo_home_url();
 		$logo_full = content_url( self::LOGO_FULL );
 		$logo_360  = content_url( self::LOGO_360 );
 		$logo_480  = content_url( self::LOGO_480 );
@@ -50,10 +49,10 @@ class Mavo_Hero_Slider {
 						     decoding="async"
 						     data-swift-skip-lazy="true"
 						     width="960" height="400"
-						     alt="Maman Voyage logo">
+						     alt="">
 						<div class="mavo-slide__overlay">
 							<div class="mavo-slide__overlay-inner">
-								<<?php echo $heading_tag; ?> class="mavo-slide__heading">Maman Voyage</<?php echo $heading_tag; ?>>
+								<h1 class="mavo-slide__heading">Maman Voyage</h1>
 							</div>
 						</div>
 					</a>
@@ -90,7 +89,6 @@ class Mavo_Hero_Slider {
 							     sizes="100vw"
 							     loading="lazy"
 							     decoding="async"
-							     data-swift-skip-lazy="true"
 							     width="<?php echo $img_w; ?>"
 							     height="<?php echo $img_h; ?>"
 							     alt="<?php echo esc_attr( $title ); ?>">
