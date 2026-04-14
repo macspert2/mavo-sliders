@@ -74,7 +74,7 @@ class Mavo_Hero_Slider {
 
 					// Build srcset attribute string (ordered 960w → 640w → 480w, WebP only)
 					$srcset_webp = implode( ', ', array_map(
-						static fn( $s ) => esc_attr( $s['webp'] ) . ' ' . $s['w'] . 'w',
+						static function ( $s ) { return esc_attr( $s['webp'] ) . ' ' . $s['w'] . 'w'; },
 						$sources
 					) );
 					$smallest = end( $sources );                  // 480w entry
@@ -126,6 +126,9 @@ class Mavo_Hero_Slider {
 		}
 
 		$meta   = wp_get_attachment_metadata( $thumb_id );
+		if ( ! is_array( $meta ) ) {
+			return [];
+		}
 		$orig_w = (int) ( $meta['width']  ?? 0 );
 		$orig_h = (int) ( $meta['height'] ?? 0 );
 
