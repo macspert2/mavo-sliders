@@ -71,6 +71,7 @@ class Mavo_Hero_Slider {
 					}
 					$post_url = get_permalink( $post->ID );
 					$title    = get_the_title( $post->ID );
+					$excerpt  = get_the_excerpt( $post->ID );
 
 					// Build srcset attribute string (ordered 960w → 640w → 480w, WebP only)
 					$srcset_webp = implode( ', ', array_map(
@@ -93,7 +94,7 @@ class Mavo_Hero_Slider {
 								 data-swift-skip-lazy="true"
 							     width="<?php echo $img_w; ?>"
 							     height="<?php echo $img_h; ?>"
-							     alt="<?php echo esc_attr( $title ); ?>">
+							     alt="<?php echo esc_attr( $excerpt ); ?>">
 							<div class="mavo-slide__overlay">
 								<div class="mavo-slide__overlay-inner">
 									<p class="mavo-slide__heading"><?php echo esc_html( $title ); ?></p>
