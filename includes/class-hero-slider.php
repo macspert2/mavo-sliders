@@ -27,6 +27,11 @@ class Mavo_Hero_Slider {
 			'orderby'          => 'rand',
 			'suppress_filters' => false,
 			'date_query'       => [ [ 'after' => '2015-12-31', 'inclusive' => false ] ],
+			'meta_query'       => [ [
+				'key'     => '_mavo_bpul_key',
+				'value'   => '',
+				'compare' => '!=',
+			] ],
 		] );
 
 		ob_start();
