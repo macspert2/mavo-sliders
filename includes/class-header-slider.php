@@ -9,7 +9,7 @@ class Mavo_Header_Slider {
 	// Language-specific subtitles
 	private const SUBTITLES = [
 		'fr' => 'Plus de 180 voyages avec enfants et un tour du monde',
-		'de' => 'Über 180 Touren mit den Kindern und eine Weltreise',
+		'de' => 'Über 180 Familienreisen und eine Weltreise',
 		'en' => 'Over 180 family trips with our kids and a world tour',
 	];
 
