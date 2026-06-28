@@ -3,7 +3,7 @@
  * Plugin Name: Mavo Sliders
  * Plugin URI:  https://www.mamanvoyage.com/
  * Description: Lightweight header and hero sliders for Maman Voyage, replacing Smart Slider 3.
- * Version:     1.0.1
+ * Version:     1.0.2
  * Author:      Maman Voyage
  * License:     GPL-2.0-or-later
  * Text Domain: mavo-sliders
@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MAVO_SLIDERS_VERSION', '1.0.1' );
+define( 'MAVO_SLIDERS_VERSION', '1.0.2' );
 define( 'MAVO_SLIDERS_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'MAVO_SLIDERS_URL',     plugin_dir_url( __FILE__ ) );
 

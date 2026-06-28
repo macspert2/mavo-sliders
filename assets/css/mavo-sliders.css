@@ -74,7 +74,7 @@
 /*	width: 100%; shows 980px if left in */
 	margin: 0;
 	padding: 10px;
-	background: rgba(78, 116, 165, 0.5);
+	background: rgba(var(--mv-color-primary-rgb, 78, 116, 165), 0.5);
 /*	font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif; */
 	font-size: 225%;
 	font-weight: 200;
@@ -113,7 +113,7 @@
 	font-size: 243.75%;
 	font-weight: 200;
 	line-height: 1.5;
-	color: #23527c;
+	color: var(--mv-color-primary, #23527c);
 }
 
 .mavo-slide__subtitle {
@@ -122,7 +122,7 @@
 /*	font-size: 75%; */
 	font-weight: 200;
 	line-height: 1.5;
-	color: #886353;
+	color: var(--mv-color-warm, #886353);
 }
 
 /* ── Hero slider ───────────────────────────────────────────── */
