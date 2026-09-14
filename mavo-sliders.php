@@ -20,17 +20,22 @@ require_once MAVO_SLIDERS_DIR . 'includes/class-hero-slider.php';
 
 /* ── Assets ──────────────────────────────────────────────────── */
 add_action( 'wp_enqueue_scripts', static function () {
+	// filemtime, not the plugin version: editing an asset without bumping the
+	// constant used to leave stale files in Autoptimize/Cloudflare.
+	$css = MAVO_SLIDERS_DIR . 'assets/css/mavo-sliders.css';
+	$js  = MAVO_SLIDERS_DIR . 'assets/js/mavo-sliders.js';
+
 	wp_enqueue_style(
 		'mavo-sliders',
 		MAVO_SLIDERS_URL . 'assets/css/mavo-sliders.css',
 		[],
-		MAVO_SLIDERS_VERSION
+		file_exists( $css ) ? filemtime( $css ) : MAVO_SLIDERS_VERSION
 	);
 	wp_enqueue_script(
 		'mavo-sliders',
 		MAVO_SLIDERS_URL . 'assets/js/mavo-sliders.js',
 		[],
-		MAVO_SLIDERS_VERSION,
+		file_exists( $js ) ? filemtime( $js ) : MAVO_SLIDERS_VERSION,
 		true   // load in footer
 	);
 } );
