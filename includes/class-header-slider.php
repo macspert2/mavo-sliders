@@ -13,11 +13,25 @@ class Mavo_Header_Slider {
 		'en' => 'Over 180 family trips with our kids',
 	];
 
+	/**
+	 * Accessible name for the two home links.
+	 *
+	 * Both were hardcoded as "Maman Voyage – accueil" while the subtitle three
+	 * lines above was already translated, so English and German screen-reader
+	 * users were read the French word for "home".
+	 */
+	private const HOME_LABELS = [
+		'fr' => 'Maman Voyage – accueil',
+		'de' => 'Maman Voyage – Startseite',
+		'en' => 'Maman Voyage – home',
+	];
+
 	public static function render(): string {
-		$lang     = mavo_current_language();
-		$home_url = mavo_home_url();
-		$logo_url = content_url( self::LOGO_PATH );
-		$subtitle = self::SUBTITLES[ $lang ] ?? self::SUBTITLES['fr'];
+		$lang       = mavo_current_language();
+		$home_url   = mavo_home_url();
+		$logo_url   = content_url( self::LOGO_PATH );
+		$subtitle   = self::SUBTITLES[ $lang ] ?? self::SUBTITLES['fr'];
+		$home_label = self::HOME_LABELS[ $lang ] ?? self::HOME_LABELS['fr'];
 
 		ob_start();
 		?>
@@ -27,7 +41,7 @@ class Mavo_Header_Slider {
 
 				<div class="mavo-slider__slide">
 					<a href="<?php echo esc_url( $home_url ); ?>" class="mavo-slide__link"
-					   aria-label="Maman Voyage – accueil">
+					   aria-label="<?php echo esc_attr( $home_label ); ?>">
 						<img src="<?php echo esc_url( $logo_url ); ?>"
 						     alt="Maman Voyage"
 						     width="360" height="100"
@@ -38,7 +52,7 @@ class Mavo_Header_Slider {
 
 				<div class="mavo-slider__slide mavo-slide--text">
 					<a href="<?php echo esc_url( $home_url ); ?>" class="mavo-slide__link"
-					   aria-label="Maman Voyage – accueil">
+					   aria-label="<?php echo esc_attr( $home_label ); ?>">
 						<p class="mavo-slide__title">Maman Voyage</p>
 						<p class="mavo-slide__subtitle"><?php echo esc_html( $subtitle ); ?></p>
 					</a>

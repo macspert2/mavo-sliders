@@ -45,14 +45,18 @@ add_action( 'wp_head', static function () {
 	if ( ! is_front_page() ) {
 		return;
 	}
-	$logo_full = content_url( 'uploads/2026/03/3verres1bib_banner2.webp' );
-	$logo_360  = content_url( 'uploads/2026/03/3verres1bib_banner2-360x.webp' );
-	$logo_480  = content_url( 'uploads/2026/03/3verres1bib_banner2-480x200.webp' );
-	$logo_640  = content_url( 'uploads/2026/03/3verres1bib_banner2-640x267.webp' );
+	// Asked of the slider itself, never spelled out again here. A preload earns
+	// its request only while it names exactly the image the page goes on to
+	// request; these four paths existed here as literals as well as in
+	// Mavo_Hero_Slider, and the cost of the two drifting is the LCP image
+	// downloaded twice plus a "preloaded but not used" warning — slower than
+	// having no preload at all. See Mavo_Hero_Slider::logo_sources().
+	$logo = Mavo_Hero_Slider::logo_sources();
+
 	echo '<link rel="preload" as="image"'
-		. ' href="' . esc_url( $logo_full ) . '"'
-		. ' imagesrcset="' . esc_attr( $logo_360 ) . ' 360w, ' . esc_attr( $logo_480 ) . ' 480w, ' . esc_attr( $logo_640 ) . ' 640w, ' . esc_attr( $logo_full ) . ' 960w"'
-		. ' imagesizes="(max-width: 480px) 480px, (max-width: 640px) 640px, 960px"'
+		. ' href="' . esc_url( $logo['full'] ) . '"'
+		. ' imagesrcset="' . esc_attr( Mavo_Hero_Slider::logo_srcset() ) . '"'
+		. ' imagesizes="' . esc_attr( Mavo_Hero_Slider::LOGO_SIZES ) . '"'
 		. ' fetchpriority="high">' . "\n";
 
 }, 1 );

@@ -10,20 +10,71 @@ class Mavo_Hero_Slider {
 	private const LOGO_480  = 'uploads/2026/03/3verres1bib_banner2-480x200.webp';
 	private const LOGO_640  = 'uploads/2026/03/3verres1bib_banner2-640x267.webp';
 
+	/** "Voyages avec enfants" — the site's main travel category. */
+	private const HERO_CATEGORY = 1752;
+
+	/** The sizes hint for the slide-1 logo, shared with the preload. */
+	public const LOGO_SIZES = '(max-width: 480px) 480px, (max-width: 640px) 640px, 960px';
+
+	/**
+	 * Absolute URLs for the slide-1 logo, keyed by the width each represents.
+	 *
+	 * Public because the homepage preloads this image, and a preload is worth
+	 * something only while it names exactly what the page then requests. These
+	 * four paths were written out a second time as literals in the preload in
+	 * mavo-sliders.php; had the two ever drifted, the browser would have
+	 * fetched the preloaded file, then fetched the real one, and warned that
+	 * the preload went unused — a slower homepage than no preload at all, for
+	 * the largest element on the page.
+	 *
+	 * @return array{full:string,360:string,480:string,640:string}
+	 */
+	public static function logo_sources(): array {
+		return [
+			'full' => content_url( self::LOGO_FULL ),
+			'360'  => content_url( self::LOGO_360 ),
+			'480'  => content_url( self::LOGO_480 ),
+			'640'  => content_url( self::LOGO_640 ),
+		];
+	}
+
+	/** The srcset string, as both the <img> and the preload need it. */
+	public static function logo_srcset(): string {
+		$src = self::logo_sources();
+
+		return $src['360'] . ' 360w, ' . $src['480'] . ' 480w, ' . $src['640'] . ' 640w, ' . $src['full'] . ' 960w';
+	}
+
 	public static function render(): string {
 		$home_url  = mavo_home_url();
     	$heading_tag = is_home() ? 'h1' : 'p';
-		$logo_full = content_url( self::LOGO_FULL );
-		$logo_360  = content_url( self::LOGO_360 );
-		$logo_480  = content_url( self::LOGO_480 );
-		$logo_640  = content_url( self::LOGO_640 );
+		$logo      = self::logo_sources();
+		$logo_full = $logo['full'];
 
-		// 4 random published posts; suppress_filters=false lets Polylang
-		// restrict results to the current language automatically.
+		/*
+		 * 4 random published posts. suppress_filters=false lets Polylang
+		 * restrict results to the current language automatically.
+		 *
+		 * The two filters are deliberate, and both narrow the pool on purpose:
+		 *
+		 *   category 1752 — "voyages avec enfants", the main travel category.
+		 *     Keeps anything non-travel out of the hero while leaving a pool
+		 *     large enough for the rotation to stay varied.
+		 *
+		 *   _mavo_bpul_key != '' — only posts carrying a Booking pop-under
+		 *     link. The hero is the most-seen placement on the site, so
+		 *     spending it on posts that can earn is deliberate. A post with no
+		 *     BPU can therefore never appear here, which is the intended
+		 *     trade-off rather than an oversight.
+		 *
+		 * ORDER BY RAND() is the slow shape of this query, and page caching
+		 * freezes the result until the cache regenerates — so in practice this
+		 * runs rarely and every visitor of a cached page sees the same four.
+		 */
 		$posts = get_posts( [
 			'numberposts'      => 4,
 			'post_status'      => 'publish',
-			'category'         => 1752,
+			'category'         => self::HERO_CATEGORY,
 			'orderby'          => 'rand',
 			'suppress_filters' => false,
 			'date_query'       => [ [ 'after' => '2015-12-31', 'inclusive' => false ] ],
@@ -45,11 +96,8 @@ class Mavo_Hero_Slider {
 					<a href="<?php echo esc_url( $home_url ); ?>" class="mavo-slide__link">
 						<img class="mavo-slide__bg"
 						     src="<?php echo esc_url( $logo_full ); ?>"
-						     srcset="<?php echo esc_attr( $logo_360 ); ?> 360w,
-						             <?php echo esc_attr( $logo_480 ); ?> 480w,
-						             <?php echo esc_attr( $logo_640 ); ?> 640w,
-						             <?php echo esc_attr( $logo_full ); ?> 960w"
-						     sizes="(max-width: 480px) 480px, (max-width: 640px) 640px, 960px"
+						     srcset="<?php echo esc_attr( self::logo_srcset() ); ?>"
+						     sizes="<?php echo esc_attr( self::LOGO_SIZES ); ?>"
 						     loading="eager"
 						     fetchpriority="high"
 						     decoding="async"
