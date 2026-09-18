@@ -166,13 +166,118 @@ class Mavo_Hero_Slider {
 	/**
 	 * Returns WebP source URLs at three widths (960, 640, 480 px).
 	 *
-	 * Filenames are constructed directly from the original's pixel dimensions,
-	 * using WordPress's own (int) truncation to match the names WP writes to disk:
-	 *   name-640x480.jpg.webp
+	 * The filenames come from the attachment's own metadata wherever WordPress
+	 * recorded an intermediate size at the width we want, because guessing them
+	 * got this wrong twice on the live site:
+	 *
+	 *   rounding  wp_constrain_dimensions() ROUNDS, and this method truncated. A
+	 *             960×679 photo yielded …-640x452 and …-480x339, both 404, where
+	 *             the files WordPress wrote are …-640x453 and …-480x340. Since the
+	 *             smallest entry is also used as src, such a slide did not paint.
+	 *             mavo-img-srcset hit the same thing (commit "height round").
+	 *
+	 *   -rotated  an EXIF-rotated upload is stored as IMG_6585-rotated.jpeg, but
+	 *             its intermediate sizes are named after the UN-rotated base, so
+	 *             the file is IMG_6585-640x853.jpeg and never
+	 *             IMG_6585-rotated-640x853.jpeg. Every portrait phone photo.
+	 *
+	 * Arithmetic remains the fallback for attachments whose metadata has no size
+	 * at that width, now rounding and stripping a trailing -rotated. Anything the
+	 * fallback produces is checked against the filesystem and dropped if absent,
+	 * so a wrong guess costs one srcset entry instead of a broken image.
+	 *
+	 * Near-duplicate of Mavo_Img_Srcset::sized_webp(); the two plugins deploy
+	 * separately, so there is nowhere safe to share it from yet.
 	 *
 	 * @return array  [ ['w'=>960,'webp'=>url,'h'=>int], [640…], [480…] ]
-	 *                Ordered largest → smallest. Empty on failure.
+	 *                Ordered largest → smallest, missing entries omitted.
+	 *                Empty on failure, which makes render() skip the slide.
 	 */
+	/**
+	 * Intermediate sizes from attachment metadata, keyed by width.
+	 *
+	 * A width can be registered more than once — an uncropped size and a hard
+	 * cropped one both 640 px wide, say — and a cropped thumbnail in a 100vw
+	 * slide would be visibly wrong. The entry whose height is nearest the
+	 * original's aspect ratio therefore wins, so a crop is only ever chosen when
+	 * nothing else was recorded at that width.
+	 *
+	 * @return array<int,array{file:string,h:int}>
+	 */
+	private static function recorded_sizes( array $meta, int $orig_w, int $orig_h ): array {
+		$out = [];
+
+		if ( empty( $meta['sizes'] ) || ! is_array( $meta['sizes'] ) || $orig_w < 1 ) {
+			return $out;
+		}
+
+		foreach ( $meta['sizes'] as $size ) {
+			$w    = (int) ( $size['width'] ?? 0 );
+			$h    = (int) ( $size['height'] ?? 0 );
+			$name = (string) ( $size['file'] ?? '' );
+
+			if ( $w < 1 || $h < 1 || $name === '' ) {
+				continue;
+			}
+
+			$drift = abs( $h - ( $orig_h * $w / $orig_w ) );
+
+			if ( ! isset( $out[ $w ] ) || $drift < $out[ $w ]['drift'] ) {
+				$out[ $w ] = [ 'file' => $name, 'h' => $h, 'drift' => $drift ];
+			}
+		}
+
+		foreach ( $out as $w => $entry ) {
+			unset( $out[ $w ]['drift'] );
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Whether a derived URL resolves to a file in the uploads directory.
+	 *
+	 * A URL that cannot be mapped to a local path — a CDN, offloaded media, a
+	 * rewritten domain — is reported present, so those installs keep exactly the
+	 * behaviour they have now rather than losing every candidate.
+	 */
+	private static function webp_exists( string $url ): bool {
+		static $cache = [];
+
+		if ( isset( $cache[ $url ] ) ) {
+			return $cache[ $url ];
+		}
+
+		$path = self::local_path( $url );
+
+		return $cache[ $url ] = ( $path === null ) ? true : file_exists( $path );
+	}
+
+	/** Maps an uploads URL to its path on disk, or null if it is not one. */
+	private static function local_path( string $url ): ?string {
+		static $uploads = null;
+
+		if ( $uploads === null ) {
+			$uploads = wp_upload_dir();
+		}
+
+		$baseurl = $uploads['baseurl'] ?? '';
+		$basedir = $uploads['basedir'] ?? '';
+
+		if ( $baseurl === '' || $basedir === '' || ! empty( $uploads['error'] ) ) {
+			return null;
+		}
+
+		// http/https and protocol-relative all name the same directory.
+		foreach ( [ $baseurl, set_url_scheme( $baseurl, 'http' ), set_url_scheme( $baseurl, 'https' ), preg_replace( '#^https?:#', '', $baseurl ) ] as $prefix ) {
+			if ( $prefix !== '' && str_starts_with( $url, $prefix ) ) {
+				return $basedir . substr( $url, strlen( $prefix ) );
+			}
+		}
+
+		return null;
+	}
+
 	private static function webp_sources( int $thumb_id ): array {
 		$full_url = wp_get_attachment_url( $thumb_id );
 		if ( ! $full_url ) {
@@ -191,31 +296,42 @@ class Mavo_Hero_Slider {
 		$ext     = pathinfo( $file, PATHINFO_EXTENSION ); // jpg / jpeg
 		$name    = pathinfo( $file, PATHINFO_FILENAME );  // IMG_2831
 
+		// An EXIF-rotated original keeps the suffix; its intermediates do not.
+		$base = preg_replace( '/-rotated$/', '', $name );
+
+		$recorded = self::recorded_sizes( $meta, $orig_w, $orig_h );
+
+		// The full size carries the whole slide: it is the 960w candidate and the
+		// fallback src, so without it there is nothing safe to render.
+		if ( ! self::webp_exists( $dir_url . $file . '.webp' ) ) {
+			return [];
+		}
+
 		$sources = [];
 		foreach ( [ 960, 640, 480 ] as $target_w ) {
 			if ( ! $orig_w || $target_w >= $orig_w ) {
 				// Original is at or below the target width — serve as-is (no upscaling)
 				$sized_file = $file;
 				$sized_h    = $orig_h;
+			} elseif ( isset( $recorded[ $target_w ] ) ) {
+				// What WordPress actually wrote, read rather than reconstructed.
+				$sized_file = $recorded[ $target_w ]['file'];
+				$sized_h    = $recorded[ $target_w ]['h'];
 			} else {
-				// Construct the WordPress-standard resized filename.
-				//
-				// wp_constrain_dimensions() ROUNDS; it does not truncate. Truncating
-				// here put a filename that does not exist into the srcset whenever
-				// the scaled height had a fractional part of .5 or more, and since
-				// the 480w entry is also used as src, the slide simply did not
-				// paint. Confirmed on the live site: a 960×679 photo yielded
-				// …-640x452 and …-480x339, both 404, while the files WordPress
-				// actually wrote are …-640x453 and …-480x340. The same mistake was
-				// found and fixed in mavo-img-srcset (commit "height round").
 				$sized_h    = (int) round( $orig_h * $target_w / $orig_w );
-				$sized_file = "{$name}-{$target_w}x{$sized_h}.{$ext}";
+				$sized_file = "{$base}-{$target_w}x{$sized_h}.{$ext}";
+			}
+
+			$webp = $dir_url . $sized_file . '.webp';
+
+			if ( ! self::webp_exists( $webp ) ) {
+				continue;
 			}
 
 			$sources[] = [
 				'w'    => $target_w,
 				'h'    => $sized_h,
-				'webp' => $dir_url . $sized_file . '.webp',
+				'webp' => $webp,
 			];
 		}
 
