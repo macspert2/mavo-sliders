@@ -199,10 +199,16 @@ class Mavo_Hero_Slider {
 				$sized_h    = $orig_h;
 			} else {
 				// Construct the WordPress-standard resized filename.
-				// WordPress uses (int) truncation in wp_constrain_dimensions(),
-				// e.g. a 960×720 image at 640 w → 640×480  (720 * 640/960 = 480.0)
-				//                              at 480 w → 480×360  (720 * 480/960 = 360.0)
-				$sized_h    = (int) ( $orig_h * $target_w / $orig_w );
+				//
+				// wp_constrain_dimensions() ROUNDS; it does not truncate. Truncating
+				// here put a filename that does not exist into the srcset whenever
+				// the scaled height had a fractional part of .5 or more, and since
+				// the 480w entry is also used as src, the slide simply did not
+				// paint. Confirmed on the live site: a 960×679 photo yielded
+				// …-640x452 and …-480x339, both 404, while the files WordPress
+				// actually wrote are …-640x453 and …-480x340. The same mistake was
+				// found and fixed in mavo-img-srcset (commit "height round").
+				$sized_h    = (int) round( $orig_h * $target_w / $orig_w );
 				$sized_file = "{$name}-{$target_w}x{$sized_h}.{$ext}";
 			}
 
