@@ -101,8 +101,7 @@ class Mavo_Hero_Slider {
 						     loading="eager"
 						     fetchpriority="high"
 						     decoding="async"
-						     data-swift-skip-lazy="true"
-						     width="960" height="400"
+							     width="960" height="400"
 						     alt="Maman Voyage logo">
 						<div class="mavo-slide__overlay">
 							<div class="mavo-slide__overlay-inner">
@@ -118,39 +117,18 @@ class Mavo_Hero_Slider {
 					if ( ! $thumb_id ) {
 						continue; // skip posts without a featured image
 					}
-					$sources = self::webp_sources( $thumb_id );
-					if ( ! $sources ) {
-						continue;
-					}
-					$post_url = get_permalink( $post->ID );
-					$title    = get_the_title( $post->ID );
-					$excerpt  = get_the_excerpt( $post->ID );
 
-					// Build srcset attribute string (ordered 960w → 640w → 480w, WebP only)
-					$srcset_webp = implode( ', ', array_map(
-						static function ( $s ) { return esc_attr( $s['webp'] ) . ' ' . $s['w'] . 'w'; },
-						$sources
-					) );
-					$smallest = end( $sources );                  // 480w entry
-					$src_webp = esc_url( $smallest['webp'] );     // smallest (480w) as src
-					$img_w    = $smallest['w'];                    // 480
-					$img_h    = $smallest['h'];                    // proportional height at 480w
+					$image = self::slide_image( $thumb_id, get_the_excerpt( $post->ID ) );
+					if ( $image === '' ) {
+						continue; // attachment gone or unreadable
+					}
 					?>
 					<div class="mavo-slider__slide">
-						<a href="<?php echo esc_url( $post_url ); ?>" class="mavo-slide__link">
-							<img class="mavo-slide__bg"
-							     src="<?php echo $src_webp; ?>"
-							     srcset="<?php echo $srcset_webp; ?>"
-							     sizes="100vw"
-							     loading="lazy"
-							     decoding="async"
-								 data-swift-skip-lazy="true"
-							     width="<?php echo $img_w; ?>"
-							     height="<?php echo $img_h; ?>"
-							     alt="<?php echo esc_attr( $excerpt ); ?>">
+						<a href="<?php echo esc_url( get_permalink( $post->ID ) ); ?>" class="mavo-slide__link">
+							<?php echo $image; // escaped by wp_get_attachment_image() ?>
 							<div class="mavo-slide__overlay">
 								<div class="mavo-slide__overlay-inner">
-									<p class="mavo-slide__heading"><?php echo esc_html( $title ); ?></p>
+									<p class="mavo-slide__heading"><?php echo esc_html( get_the_title( $post->ID ) ); ?></p>
 								</div>
 							</div>
 						</a>
@@ -194,147 +172,40 @@ class Mavo_Hero_Slider {
 	 *                Empty on failure, which makes render() skip the slide.
 	 */
 	/**
-	 * Intermediate sizes from attachment metadata, keyed by width.
+	 * The <img> for one hero slide.
 	 *
-	 * A width can be registered more than once — an uncropped size and a hard
-	 * cropped one both 640 px wide, say — and a cropped thumbnail in a 100vw
-	 * slide would be visibly wrong. The entry whose height is nearest the
-	 * original's aspect ratio therefore wins, so a crop is only ever chosen when
-	 * nothing else was recorded at that width.
+	 * Everything about which files exist and at what size now comes from
+	 * WordPress. This method used to derive the 960/640/480 filenames itself and
+	 * append .webp to each, which produced two kinds of URL that 404: an
+	 * EXIF-rotated upload stores its intermediates under the un-rotated base, and
+	 * heights computed here could land a pixel off the ones WordPress used in the
+	 * filename. Since the hero used the smallest candidate as src, such a slide
+	 * simply did not paint.
 	 *
-	 * @return array<int,array{file:string,h:int}>
+	 * wp_get_attachment_image() reads the real filenames from the attachment
+	 * metadata, so neither mistake is possible any more.
+	 *
+	 * The WebP swap is not done here either. Mavo Img Srcset filters
+	 * wp_calculate_image_srcset and wp_get_attachment_image_src, so the sidecars
+	 * arrive through those — no call between the two plugins, and no copy of the
+	 * lookup living in both. If that plugin is ever switched off the hero keeps
+	 * working and serves JPEGs.
+	 *
+	 * sizes is forced to 100vw because the hero spans the viewport; core would
+	 * otherwise size it against the content column.
 	 */
-	private static function recorded_sizes( array $meta, int $orig_w, int $orig_h ): array {
-		$out = [];
-
-		if ( empty( $meta['sizes'] ) || ! is_array( $meta['sizes'] ) || $orig_w < 1 ) {
-			return $out;
-		}
-
-		foreach ( $meta['sizes'] as $size ) {
-			$w    = (int) ( $size['width'] ?? 0 );
-			$h    = (int) ( $size['height'] ?? 0 );
-			$name = (string) ( $size['file'] ?? '' );
-
-			if ( $w < 1 || $h < 1 || $name === '' ) {
-				continue;
-			}
-
-			$drift = abs( $h - ( $orig_h * $w / $orig_w ) );
-
-			if ( ! isset( $out[ $w ] ) || $drift < $out[ $w ]['drift'] ) {
-				$out[ $w ] = [ 'file' => $name, 'h' => $h, 'drift' => $drift ];
-			}
-		}
-
-		foreach ( $out as $w => $entry ) {
-			unset( $out[ $w ]['drift'] );
-		}
-
-		return $out;
-	}
-
-	/**
-	 * Whether a derived URL resolves to a file in the uploads directory.
-	 *
-	 * A URL that cannot be mapped to a local path — a CDN, offloaded media, a
-	 * rewritten domain — is reported present, so those installs keep exactly the
-	 * behaviour they have now rather than losing every candidate.
-	 */
-	private static function webp_exists( string $url ): bool {
-		static $cache = [];
-
-		if ( isset( $cache[ $url ] ) ) {
-			return $cache[ $url ];
-		}
-
-		$path = self::local_path( $url );
-
-		return $cache[ $url ] = ( $path === null ) ? true : file_exists( $path );
-	}
-
-	/** Maps an uploads URL to its path on disk, or null if it is not one. */
-	private static function local_path( string $url ): ?string {
-		static $uploads = null;
-
-		if ( $uploads === null ) {
-			$uploads = wp_upload_dir();
-		}
-
-		$baseurl = $uploads['baseurl'] ?? '';
-		$basedir = $uploads['basedir'] ?? '';
-
-		if ( $baseurl === '' || $basedir === '' || ! empty( $uploads['error'] ) ) {
-			return null;
-		}
-
-		// http/https and protocol-relative all name the same directory.
-		foreach ( [ $baseurl, set_url_scheme( $baseurl, 'http' ), set_url_scheme( $baseurl, 'https' ), preg_replace( '#^https?:#', '', $baseurl ) ] as $prefix ) {
-			if ( $prefix !== '' && str_starts_with( $url, $prefix ) ) {
-				return $basedir . substr( $url, strlen( $prefix ) );
-			}
-		}
-
-		return null;
-	}
-
-	private static function webp_sources( int $thumb_id ): array {
-		$full_url = wp_get_attachment_url( $thumb_id );
-		if ( ! $full_url ) {
-			return [];
-		}
-
-		$meta   = wp_get_attachment_metadata( $thumb_id );
-		if ( ! is_array( $meta ) ) {
-			return [];
-		}
-		$orig_w = (int) ( $meta['width']  ?? 0 );
-		$orig_h = (int) ( $meta['height'] ?? 0 );
-
-		$dir_url = trailingslashit( dirname( $full_url ) );
-		$file    = basename( $full_url );                  // e.g. IMG_2831.jpg
-		$ext     = pathinfo( $file, PATHINFO_EXTENSION ); // jpg / jpeg
-		$name    = pathinfo( $file, PATHINFO_FILENAME );  // IMG_2831
-
-		// An EXIF-rotated original keeps the suffix; its intermediates do not.
-		$base = preg_replace( '/-rotated$/', '', $name );
-
-		$recorded = self::recorded_sizes( $meta, $orig_w, $orig_h );
-
-		// The full size carries the whole slide: it is the 960w candidate and the
-		// fallback src, so without it there is nothing safe to render.
-		if ( ! self::webp_exists( $dir_url . $file . '.webp' ) ) {
-			return [];
-		}
-
-		$sources = [];
-		foreach ( [ 960, 640, 480 ] as $target_w ) {
-			if ( ! $orig_w || $target_w >= $orig_w ) {
-				// Original is at or below the target width — serve as-is (no upscaling)
-				$sized_file = $file;
-				$sized_h    = $orig_h;
-			} elseif ( isset( $recorded[ $target_w ] ) ) {
-				// What WordPress actually wrote, read rather than reconstructed.
-				$sized_file = $recorded[ $target_w ]['file'];
-				$sized_h    = $recorded[ $target_w ]['h'];
-			} else {
-				$sized_h    = (int) round( $orig_h * $target_w / $orig_w );
-				$sized_file = "{$base}-{$target_w}x{$sized_h}.{$ext}";
-			}
-
-			$webp = $dir_url . $sized_file . '.webp';
-
-			if ( ! self::webp_exists( $webp ) ) {
-				continue;
-			}
-
-			$sources[] = [
-				'w'    => $target_w,
-				'h'    => $sized_h,
-				'webp' => $webp,
-			];
-		}
-
-		return $sources;
+	private static function slide_image( int $thumb_id, string $excerpt ): string {
+		return (string) wp_get_attachment_image(
+			$thumb_id,
+			'full',
+			false,
+			[
+				'class'    => 'mavo-slide__bg',
+				'sizes'    => '100vw',
+				'alt'      => $excerpt,
+				'loading'  => 'lazy',
+				'decoding' => 'async',
+			]
+		);
 	}
 }
